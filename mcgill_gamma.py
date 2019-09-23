@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
 
-from configparser import ConfigParser
-from pathlib import Path
-from operator import itemgetter
 import csv
+from configparser import ConfigParser
+from operator import itemgetter
+from pathlib import Path
 
 import numpy as np
-
 from npstreams import average
-from skued import diffread
 
 from iris import AbstractRawDataset, check_raw_bounds
+from skued import diffread
 
 
 def csv_to_kvstore(fname):
@@ -111,6 +110,38 @@ class McGillRawDatasetGamma(AbstractRawDataset):
         metadata["time_points"] = eval(exp_params["time points"])
 
         return metadata
+
+    @check_raw_bounds
+    def electron_count(self, timedelay, scan):
+        """
+        Return the electron count for the picture acquired at 
+        time-delay ``timedelay`` ans scan ``scan``
+
+        Parameters
+        ----------
+        timdelay : float
+            Acquisition time-delay.
+        scan : int, optional
+            Scan number. Default is 1
+        
+        Returns
+        -------
+        e : float
+            Electron number.
+
+        Raises
+        ------
+        ValueError : if ``timedelay`` or ``scan`` are invalid / out of bounds.
+        IOError : Filename is not associated with an image/does not exist.
+        """
+        fname = (
+            Path(self.source) / f"scan_{scan:04d}" / f"pumpon_{timedelay:+010.3f}ps.tif"
+        )
+        if not fname.exists():
+            raise IOError(
+                f"Expected the file for {timedelay}ps and scan {scan} to exist, but could not find it."
+            )
+        return self.ecounts[img_fname.relative_to(self.source)]
 
     @check_raw_bounds
     def raw_data(self, timedelay, scan=1, bgr=True, **kwargs):
