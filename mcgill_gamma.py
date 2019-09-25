@@ -210,8 +210,9 @@ class McGillRawDatasetGammaPumpoff(McGillRawDatasetGamma):
 
         # Determine time-stamps from filenames
         fnames = {k for (k, v) in self.timestamps.items() if k.parent == Path("pump_off")}
-        self.time_points = np.asfarray([self.timestamps[fname] for fname in fnames])
-        self.time_points -= self.time_points.min()
+        _time_points = np.asfarray([self.timestamps[fname] for fname in fnames])
+        _time_points -= _time_points.min()
+        self.time_points _time_points
     
     @check_raw_bounds
     def raw_data(self, timedelay, scan=1, bgr=True, **kwargs):
