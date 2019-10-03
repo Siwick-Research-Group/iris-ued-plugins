@@ -4,6 +4,7 @@ import csv
 from configparser import ConfigParser
 from operator import itemgetter
 from pathlib import Path
+from functools import wraps
 
 import numpy as np
 from npstreams import average
@@ -20,6 +21,12 @@ def csv_to_kvstore(fname):
         next(reader, None)  # Skip one row of headers
         return {Path(row[0]): float(row[1]) for row in reader}
 
+def asfarray(f):
+    """ Cast the result array from a function as a floating-point array """
+    @wraps(f)
+    def newf(*args, **kwargs):
+        return np.asfarray(f(*args, **kwargs))
+    return newf
 
 class McGillRawDatasetGamma(AbstractRawDataset):
     """
@@ -143,6 +150,7 @@ class McGillRawDatasetGamma(AbstractRawDataset):
             )
         return self.ecounts[img_fname.relative_to(self.source)]
 
+    @asfarray
     @check_raw_bounds
     def raw_data(self, timedelay, scan=1, bgr=True, **kwargs):
         """
@@ -210,8 +218,9 @@ class McGillRawDatasetGammaPumpoff(McGillRawDatasetGamma):
 
         # Determine time-stamps from filenames
         fnames = {k for (k, v) in self.timestamps.items() if k.parent == Path("pump_off")}
-        self.time_points = np.asfarray([self.timestamps[fname] for fname in fnames])
+        self.time_points = np.asfarray(sorted(self.timestamps[fname] for fname in fnames))
     
+    @asfarray
     @check_raw_bounds
     def raw_data(self, timedelay, scan=1, bgr=True, **kwargs):
         """
