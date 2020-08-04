@@ -4,6 +4,7 @@ from functools import lru_cache
 from glob import iglob
 from os import listdir
 from os.path import isdir, isfile, join
+from pathlib import Path
 from re import search, sub
 
 import numpy as np
@@ -140,6 +141,71 @@ class McGillRawDatasetAlpha(AbstractRawDataset):
         )
 
         im = diffread(join(self.source, filename)).astype(np.float)
+        if bgr:
+            im -= self.background
+            im[im < 0] = 0
+
+        return im
+
+class McGillRawDatasetAlphaPumpoff(AbstractRawDataset):
+    """
+    Diagnostic raw dataset from the Siwick Research Group Diffractometer, in use 
+    from ~2008 to 2017. This dataset will reduce only pumpoff pictures.
+
+    Parameters
+    ----------
+    source : str
+        Raw data directory
+    
+    Raises
+    ------
+    ValueError : if the source directory does not exist.
+    """
+
+    display_name = "McGill Raw Dataset v. Alpha [Diagnostic pump-off]"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        with McGillRawDatasetAlpha(*args, **kwargs) as dset:
+            self.scans=[1]
+            self.time_points = list(dset.scans)
+        
+    @property
+    @lru_cache(maxsize=1)
+    def background(self):
+        """ Laser background """
+        backgrounds = map(diffread, iglob(join(self.source, "background.*.pumpoff.tif")))
+        return average(backgrounds)
+
+    def raw_data(self, timedelay, scan=1, bgr=True, **kwargs):
+        """
+        Returns an array of the image at a timedelay and scan.
+        
+        Parameters
+        ----------
+        timdelay : float
+            Acquisition time-delay.
+        scan : int, optional
+            Scan number. Default is 1.
+        bgr : bool, optional
+            If True (default), laser background is removed before being returned.
+        
+        Returns
+        -------
+        arr : `~numpy.ndarray`, ndim 2
+        
+        Raises
+        ------
+        IOError : Filename is not associated with an image/does not exist.
+        """
+        fname = Path(self.source) / f"data.nscan.{str(int(timedelay)).zfill(2)}.pumpoff.tif"
+
+        if not fname.exists():
+            raise IOError(
+                f"Expected the file {fname} to exist, but could not find it."
+            )
+        
+        im = np.asfarray(diffread(fname))
         if bgr:
             im -= self.background
             im[im < 0] = 0
