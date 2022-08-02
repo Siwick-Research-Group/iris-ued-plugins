@@ -3,18 +3,13 @@
 import csv
 from configparser import ConfigParser
 from operator import itemgetter
-
 from functools import wraps
 import os
 import numpy as np
 from npstreams import average
-
 from iris import AbstractRawDataset, check_raw_bounds
+from skued import diffread
 
-from PIL import Image
-
-def diffread(fname):
-    return np.array(Image.open(fname))
     
 def csv_to_kvstore(sname, fname):
     """ Parse CSV file into key-value store where keys are 
@@ -25,9 +20,8 @@ def csv_to_kvstore(sname, fname):
         next(reader, None)  # Skip one row of headers
         dictdata={}
         for row in reader:
-            key = os.path.join(sname, row[0])
+            key = os.path.join(sname, row[0]).replace(os.sep, '/')
             dictdata[key] = float(row[1])
-            print(key)
         return dictdata#{os.path.abspath(row[0]): float(row[1]) for row in reader}
 
 
@@ -71,7 +65,7 @@ class McGillRawDatasetDelta(AbstractRawDataset):
 
         # Key-value stores where keys are always fileos.abspaths, and values are always floats
         self.timestamps = csv_to_kvstore(self.source , "timestamps.csv")
-        print(f"Source is {self.source}")
+        #print(f"Source is {self.source}")
         #self.timestamps.__getitem__ = newgetitem
         self.ecounts = csv_to_kvstore(self.source , "ecounts.csv")
         self.room_temperature = csv_to_kvstore(self.source , "room_temp.csv")
