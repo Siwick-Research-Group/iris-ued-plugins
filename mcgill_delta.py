@@ -16,13 +16,19 @@ from PIL import Image
 def diffread(fname):
     return np.array(Image.open(fname))
     
-def csv_to_kvstore(fname):
+def csv_to_kvstore(sname, fname):
     """ Parse CSV file into key-value store where keys are 
     always fileos.abspaths, and values are always floats """
-    with open(fname, mode="r") as f:
+    ffname = os.path.join(sname , fname)
+    with open(ffname, mode="r") as f:
         reader = csv.reader(f)
         next(reader, None)  # Skip one row of headers
-        return {os.path.abspath(row[0]): float(row[1]) for row in reader}
+        dictdata={}
+        for row in reader:
+            key = os.path.join(sname, row[0])
+            dictdata[key] = float(row[1])
+            print(key)
+        return dictdata#{os.path.abspath(row[0]): float(row[1]) for row in reader}
 
 
 def asfarray(f):
@@ -64,15 +70,12 @@ class McGillRawDatasetDelta(AbstractRawDataset):
         super().__init__(source, metadata_dict)
 
         # Key-value stores where keys are always fileos.abspaths, and values are always floats
-        self.timestamps = csv_to_kvstore(os.path.join(self.source , "timestamps.csv"))
-
-        for key in self.timestamps.keys():
-            print(key)
-        print(self.source)
+        self.timestamps = csv_to_kvstore(self.source , "timestamps.csv")
+        print(f"Source is {self.source}")
         #self.timestamps.__getitem__ = newgetitem
-        self.ecounts = csv_to_kvstore(os.path.join(self.source , "ecounts.csv"))
-        self.room_temperature = csv_to_kvstore(os.path.join(self.source , "room_temp.csv"))
-        self.room_humidity = csv_to_kvstore(os.path.join(self.source , "room_humidity.csv"))
+        self.ecounts = csv_to_kvstore(self.source , "ecounts.csv")
+        self.room_temperature = csv_to_kvstore(self.source , "room_temp.csv")
+        self.room_humidity = csv_to_kvstore(self.source , "room_humidity.csv")
 
     def nearest_laserbg(self, timestamp):
         """ Laser background taken nearest to ``timestamp`` """
