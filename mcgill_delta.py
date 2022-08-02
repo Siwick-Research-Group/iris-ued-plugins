@@ -20,7 +20,7 @@ def csv_to_kvstore(sname, fname):
         next(reader, None)  # Skip one row of headers
         dictdata={}
         for row in reader:
-            key = os.path.join(sname, row[0]).replace(os.sep, '/')
+            key = os.path.join(sname, row[0]).replace('\\','/')
             dictdata[key] = float(row[1])
         return dictdata#{os.path.abspath(row[0]): float(row[1]) for row in reader}
 
@@ -230,7 +230,7 @@ class McGillRawDatasetDeltaPumpoff(McGillRawDatasetDelta):
 
         # Determine time-stamps from filenames
         fnames = {
-            k for (k, v) in self.timestamps.items() if k.parent == os.path.abspath("pump_off")
+            k for (k, v) in self.timestamps.items() if "pump_off" in k
         }
         self.time_points = np.asfarray(
             sorted(self.timestamps[fname] for fname in fnames)
@@ -274,7 +274,7 @@ class McGillRawDatasetDeltaPumpoff(McGillRawDatasetDelta):
         im = diffread(fname)
         if bgr:
             dark_bg = self.nearest_dark(
-                timestamp=self.timestamps[fname.relative_to(self.source)]
+                timestamp=self.timestamps[fname]#.relative_to(self.source)]
             )
             im -= dark_bg
 
